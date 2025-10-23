@@ -4,7 +4,7 @@ from kerykeion import Kerykeion
 
 app = FastAPI()
 
-# Permite que o Lovable ou seu app web acessem este backend
+# Middleware CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,22 +13,39 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/natal")
-def get_natal_chart(name: str, year: int, month: int, day: int, hour: int, minute: int, lat: float, lon: float, tz: float):
-    k = Kerykeion(
-        name=name,
-        year=year,
-        month=month,
-        day=day,
-        hour=hour,
-        minute=minute,
-        lat=lat,
-        lon=lon,
-        tz=tz
-    )
+@app.get("/")
+def root():
+    return {"message": "AstroBrain API online — consulte /natal para gerar seu mapa astral"}
 
-    return {
-        "sun": k.sun.sign,
-        "moon": k.moon.sign,
-        "ascendant": k.ascendant.sign
-    }
+@app.get("/natal")
+def get_natal_chart(
+    name: str,
+    year: int,
+    month: int,
+    day: int,
+    hour: int,
+    minute: int,
+    lat: float,
+    lon: float,
+    tz: float
+):
+    try:
+        k = Kerykeion(
+            name=name,
+            year=year,
+            month=month,
+            day=day,
+            hour=hour,
+            minute=minute,
+            lat=lat,
+            lon=lon,
+            tz=tz
+        )
+        return {
+            "sun": k.sun.sign,
+            "moon": k.moon.sign,
+            "ascendant": k.ascendant.sign
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
