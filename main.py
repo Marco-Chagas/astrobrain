@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from kerykeion.charts import AstrologicalSubject
+from kerykeion.charts import AstrologicalSubjectFactory
 
 app = FastAPI()
 
-# Middleware for CORS
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,7 +30,8 @@ def get_natal_chart(
     tz: float
 ):
     try:
-        person = AstrologicalSubject(
+        # Create the chart factory object
+        chart_factory = AstrologicalSubjectFactory(
             name=name,
             year=year,
             month=month,
@@ -42,11 +43,14 @@ def get_natal_chart(
             tz=tz
         )
 
-        # The signs are now accessible like this in Kerykeion 5.x
+        # Generate the chart data
+        chart = chart_factory.build()
+
+        # Return the most relevant details
         return {
-            "sun": person.sun.sign,
-            "moon": person.moon.sign,
-            "ascendant": person.ascendant.sign
+            "sun": chart.sun.sign,
+            "moon": chart.moon.sign,
+            "ascendant": chart.ascendant.sign
         }
     except Exception as e:
         return {"error": str(e)}
