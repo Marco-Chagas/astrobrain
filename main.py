@@ -1,56 +1,51 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from kerykeion import astrological_subject_factory
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from kerykeion import KrInstance
+import pytz
 
-app = FastAPI()
+app = FastAPI(title="AstroBrain API", description="Accurate Swiss Ephemeris-based Natal Chart API")
 
-# Enable CORS for universal access
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+class NatalData(BaseModel):
+    name: str
+    year: int
+    month: int
+    day: int
+    hour: int
+    minute: int
+    lat: float
+    lon: float
+    timezone: float
 
 @app.get("/")
 def root():
-    return {"message": "AstroBrain API online — consulte /natal para gerar seu mapa astral"}
+    return {"status": "✅ AstroBrain is online and ready for POST /natal_chart"}
 
-@app.get("/natal")
-def get_natal_chart(
-    name: str,
-    year: int,
-    month: int,
-    day: int,
-    hour: int,
-    minute: int,
-    lat: float,
-    lon: float,
-    tz: float
-):
+@app.post("/natal_chart")
+def natal_chart(data: NatalData):
     try:
-        # Instantiate the factory correctly
-        factory = astrological_subject_factory.AstrologicalSubjectFactory(
-            name=name,
-            year=year,
-            month=month,
-            day=day,
-            hour=hour,
-            minute=minute,
-            lat=lat,
-            lon=lon,
-            tz=tz
+        # Create the instance
+        kr = KrInstance(
+            name=data.name,
+            year=data.year,
+            month=data.month,
+            day=data.day,
+            hour=data.hour,
+            minute=data.minute,
+            lon=data.lon,
+            lat=data.lat,
+            tz=data.timezone
         )
 
-        # Build the subject
-        subject = factory.build()
-
-        # Return key positions
+        # Build the response
         return {
-            "sun": subject.sun.sign,
-            "moon": subject.moon.sign,
-            "ascendant": subject.ascendant.sign
+            "name": data.name,
+            "sun": kr.sun,
+            "moon": kr.moon,
+            "ascendant": kr.ascendant,
+            "planets": kr.planets,
+            "houses": kr.houses,
+            "aspects": kr.aspects
         }
+
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
